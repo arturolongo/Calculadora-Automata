@@ -1,0 +1,189 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Calculadora</title>
+    <style>
+        body {
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+
+        .calculadora {
+            width: 400px;
+            margin: 50px auto;
+            background-color: #333;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        }
+
+        .pantalla {
+            background-color: #fff;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            text-align: right;
+            font-size: 2em;
+            min-height: 60px;
+        }
+
+        .botones {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        button {
+            padding: 20px;
+            font-size: 1.5em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            opacity: 0.8;
+        }
+
+        .numero {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .operador {
+            background-color: #FF9800;
+            color: white;
+        }
+
+        .igual {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        .limpiar {
+            background-color: #f44336;
+            color: white;
+        }
+
+        form {
+            display: none;
+        }
+
+        #resultado {
+            color: #333;
+            margin: 0;
+        }
+
+        .arbol-container {
+            margin-top: 20px;
+            text-align: center;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+        }
+
+        .arbol-imagen {
+            max-width: 100%;
+            height: auto;
+            margin: 15px auto;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            background-color: white;
+            padding: 10px;
+        }
+
+        .ruta-debug {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculadora">
+        <div class="pantalla">
+            <div id="expresion">0</div>
+        </div>
+        
+        <div class="botones">
+            <button type="button" class="limpiar" onclick="limpiar()">C</button>
+            <button type="button" class="operador" onclick="agregarCaracter('(')">(</button>
+            <button type="button" class="operador" onclick="agregarCaracter(')')">)</button>
+            <button type="button" class="operador" onclick="agregarCaracter('/')">/</button>
+            
+            <button type="button" class="numero" onclick="agregarCaracter('7')">7</button>
+            <button type="button" class="numero" onclick="agregarCaracter('8')">8</button>
+            <button type="button" class="numero" onclick="agregarCaracter('9')">9</button>
+            <button type="button" class="operador" onclick="agregarCaracter('*')">×</button>
+            
+            <button type="button" class="numero" onclick="agregarCaracter('4')">4</button>
+            <button type="button" class="numero" onclick="agregarCaracter('5')">5</button>
+            <button type="button" class="numero" onclick="agregarCaracter('6')">6</button>
+            <button type="button" class="operador" onclick="agregarCaracter('-')">-</button>
+            
+            <button type="button" class="numero" onclick="agregarCaracter('1')">1</button>
+            <button type="button" class="numero" onclick="agregarCaracter('2')">2</button>
+            <button type="button" class="numero" onclick="agregarCaracter('3')">3</button>
+            <button type="button" class="operador" onclick="agregarCaracter('+')">+</button>
+            
+            <button type="button" class="numero" onclick="agregarCaracter('0')">0</button>
+            <button type="button" class="numero" onclick="agregarCaracter('.')">.</button>
+            <button type="button" class="igual" onclick="calcular()" style="grid-column: span 2">=</button>
+        </div>
+
+        <div class="arbol-container">
+            {% if imagen_arbol %}
+                <h3>Árbol de la operación:</h3>
+                <img src="{% static imagen_arbol %}" alt="Árbol de operaciones" class="arbol-imagen">
+                <p class="ruta-debug">Ruta de la imagen: {% static imagen_arbol %}</p>
+            {% endif %}
+        </div>
+
+        <form method="post" id="calculadoraForm">
+            {% csrf_token %}
+            <input type="hidden" name="expresion" id="expresionInput">
+        </form>
+    </div>
+
+    <script>
+        let expresionActual = '0';
+        const expresionDiv = document.getElementById('expresion');
+        const expresionInput = document.getElementById('expresionInput');
+        const formulario = document.getElementById('calculadoraForm');
+
+        function actualizarPantalla() {
+            expresionDiv.textContent = expresionActual;
+        }
+
+        function agregarCaracter(caracter) {
+            if (expresionActual === '0' && caracter !== '.') {
+                expresionActual = caracter;
+            } else {
+                expresionActual += caracter;
+            }
+            actualizarPantalla();
+        }
+
+        function limpiar() {
+            expresionActual = '0';
+            actualizarPantalla();
+        }
+
+        function calcular() {
+            expresionInput.value = expresionActual;
+            formulario.submit();
+        }
+
+        // Manejar el resultado si existe
+        const resultado = '{{ resultado|default:"0"|escapejs }}';
+        if (resultado !== '0') {
+            expresionActual = resultado;
+            actualizarPantalla();
+        }
+    </script>
+</body>
+</html> 
