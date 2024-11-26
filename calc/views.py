@@ -1,8 +1,11 @@
 from django.conf import settings
 from django.shortcuts import render
 from .utils import generar_arbol_grafico
+from .lexer import CalculadoraLexer
+from .models import Operacion
 import os
 import re
+import json
 
 def calcular(expresion):
     try:
@@ -24,31 +27,61 @@ def calcular(expresion):
 def calculadora(request):
     resultado = None
     imagen_arbol = None
+    tokens_info = None
     
     if request.method == 'POST':
         expresion = request.POST.get('expresion', '')
-        resultado = calcular(expresion)
+        accion = request.POST.get('accion', 'calcular')
         
-        if resultado != "Error":
+        if accion == 'ms':
+            # Guardar en memoria
             try:
-                dot = generar_arbol_grafico(expresion)
-                # Crear nombre único para la imagen
-                nombre_archivo = f'arbol_{hash(expresion)}'
-                # Ruta absoluta para guardar la imagen
-                ruta_static = os.path.join(settings.BASE_DIR, 'calc', 'static', 'calc')
-                # Asegurarse de que el directorio existe
-                os.makedirs(ruta_static, exist_ok=True)
-                # Ruta completa del archivo
-                ruta_imagen = os.path.join(ruta_static, f'{nombre_archivo}')
-                # Generar la imagen
-                dot.render(ruta_imagen, format='png', cleanup=True)
-                # URL para la plantilla
-                imagen_arbol = f'calc/{nombre_archivo}.png'
-                print(f"Imagen generada en: {ruta_imagen}.png")
-            except Exception as e:
-                print(f"Error al generar árbol: {e}")
+                valor = float(expresion)
+                Operacion.objects.create(
+                    expresion='MS',
+                    resultado=valor,
+                    memoria=valor
+                )
+                resultado = expresion
+            except ValueError:
+                resultado = "Error"
+        else:
+            # Procesar expresión
+            lexer = CalculadoraLexer()
+            lexer.build()
+            tokens = lexer.tokenize(expresion)
+            
+            # Modificar esta parte para dar formato a los tokens
+            lista_tokens = []
+            for token in tokens:
+                tipo = "Número" if token.type == 'NUMERO' else "Operador"
+                lista_tokens.append({
+                    'valor': token.value,
+                    'tipo': tipo
+                })
+            
+            tokens_info = {
+                'lista_tokens': lista_tokens,
+                'total_numeros': lexer.contador_tokens['numeros'],
+                'total_operadores': lexer.contador_tokens['operadores']
+            }
+            
+            # Agregar este print para debug
+            print("Tokens Info:", json.dumps(tokens_info, indent=2))
+            
+            resultado = calcular(expresion)
+            
+            if resultado != "Error":
+                try:
+                    dot = generar_arbol_grafico(expresion)
+                    nombre_archivo = f'arbol_{hash(expresion)}'
+                    imagen_arbol = f'calc/{nombre_archivo}.png'
+                    dot.render(f'calc/static/calc/{nombre_archivo}', format='png', cleanup=True)
+                except Exception as e:
+                    print(f"Error al generar árbol: {e}")
     
     return render(request, 'calc/calculadora.html', {
         'resultado': resultado,
-        'imagen_arbol': imagen_arbol
+        'imagen_arbol': imagen_arbol,
+        'tokens_info': json.dumps(tokens_info) if tokens_info else None
     })

@@ -12,7 +12,7 @@
 
         .calculadora {
             width: 400px;
-            margin: 50px auto;
+            margin: 0;
             background-color: #333;
             padding: 20px;
             border-radius: 10px;
@@ -78,11 +78,8 @@
         }
 
         .arbol-container {
-            margin-top: 20px;
-            text-align: center;
-            padding: 15px;
-            background-color: #f5f5f5;
-            border-radius: 8px;
+            margin: 0;
+            width: 350px;
         }
 
         .arbol-imagen {
@@ -101,38 +98,84 @@
             color: #666;
             margin-top: 5px;
         }
+
+        .contenedor-principal {
+            display: grid;
+            grid-template-columns: auto auto auto;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 50px auto;
+            align-items: start;
+        }
+
+        .tokens-info {
+            margin: 0 !important;
+            width: 300px;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        .tokens-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .tokens-table th, .tokens-table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .tokens-table th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+
+        .tokens-table tr:hover {
+            background-color: #f9f9f9;
+        }
     </style>
 </head>
 <body>
-    <div class="calculadora">
-        <div class="pantalla">
-            <div id="expresion">0</div>
-        </div>
-        
-        <div class="botones">
-            <button type="button" class="limpiar" onclick="limpiar()">C</button>
-            <button type="button" class="operador" onclick="agregarCaracter('(')">(</button>
-            <button type="button" class="operador" onclick="agregarCaracter(')')">)</button>
-            <button type="button" class="operador" onclick="agregarCaracter('/')">/</button>
+    <div class="contenedor-principal">
+        <div class="calculadora">
+            <div class="pantalla">
+                <div id="expresion">0</div>
+            </div>
             
-            <button type="button" class="numero" onclick="agregarCaracter('7')">7</button>
-            <button type="button" class="numero" onclick="agregarCaracter('8')">8</button>
-            <button type="button" class="numero" onclick="agregarCaracter('9')">9</button>
-            <button type="button" class="operador" onclick="agregarCaracter('*')">×</button>
-            
-            <button type="button" class="numero" onclick="agregarCaracter('4')">4</button>
-            <button type="button" class="numero" onclick="agregarCaracter('5')">5</button>
-            <button type="button" class="numero" onclick="agregarCaracter('6')">6</button>
-            <button type="button" class="operador" onclick="agregarCaracter('-')">-</button>
-            
-            <button type="button" class="numero" onclick="agregarCaracter('1')">1</button>
-            <button type="button" class="numero" onclick="agregarCaracter('2')">2</button>
-            <button type="button" class="numero" onclick="agregarCaracter('3')">3</button>
-            <button type="button" class="operador" onclick="agregarCaracter('+')">+</button>
-            
-            <button type="button" class="numero" onclick="agregarCaracter('0')">0</button>
-            <button type="button" class="numero" onclick="agregarCaracter('.')">.</button>
-            <button type="button" class="igual" onclick="calcular()" style="grid-column: span 2">=</button>
+            <div class="botones">
+                <button type="button" class="limpiar" onclick="limpiar()">C</button>
+                <button type="button" class="limpiar" onclick="borrarUltimo()">⌫</button>
+                <button type="button" class="operador" onclick="guardarMemoria()">MS</button>
+                <button type="button" class="operador" onclick="agregarCaracter('/')">/</button>
+                
+                <button type="button" class="numero" onclick="agregarCaracter('7')">7</button>
+                <button type="button" class="numero" onclick="agregarCaracter('8')">8</button>
+                <button type="button" class="numero" onclick="agregarCaracter('9')">9</button>
+                <button type="button" class="operador" onclick="agregarCaracter('*')">×</button>
+                
+                <button type="button" class="numero" onclick="agregarCaracter('4')">4</button>
+                <button type="button" class="numero" onclick="agregarCaracter('5')">5</button>
+                <button type="button" class="numero" onclick="agregarCaracter('6')">6</button>
+                <button type="button" class="operador" onclick="agregarCaracter('-')">-</button>
+                
+                <button type="button" class="numero" onclick="agregarCaracter('1')">1</button>
+                <button type="button" class="numero" onclick="agregarCaracter('2')">2</button>
+                <button type="button" class="numero" onclick="agregarCaracter('3')">3</button>
+                <button type="button" class="operador" onclick="agregarCaracter('+')">+</button>
+                
+                <button type="button" class="numero" onclick="agregarCaracter('0')">0</button>
+                <button type="button" class="numero" onclick="agregarCaracter('.')">.</button>
+                <button type="button" class="igual" onclick="calcular()" style="grid-column: span 2">=</button>
+            </div>
+
+            <form method="post" id="calculadoraForm">
+                {% csrf_token %}
+                <input type="hidden" name="expresion" id="expresionInput">
+            </form>
         </div>
 
         <div class="arbol-container">
@@ -143,10 +186,23 @@
             {% endif %}
         </div>
 
-        <form method="post" id="calculadoraForm">
-            {% csrf_token %}
-            <input type="hidden" name="expresion" id="expresionInput">
-        </form>
+        <div class="tokens-info">
+            <h3>Información de Tokens</h3>
+            <table class="tokens-table">
+                <thead>
+                    <tr>
+                        <th>Token</th>
+                        <th>Tipo</th>
+                    </tr>
+                </thead>
+                <tbody id="lista-tokens">
+                </tbody>
+            </table>
+            <div id="total-tokens">
+                <p>Total números: <span id="total-numeros">0</span></p>
+                <p>Total operadores: <span id="total-operadores">0</span></p>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -178,12 +234,53 @@
             formulario.submit();
         }
 
-        // Manejar el resultado si existe
+        function borrarUltimo() {
+            if (expresionActual.length > 1) {
+                expresionActual = expresionActual.slice(0, -1);
+            } else {
+                expresionActual = '0';
+            }
+            actualizarPantalla();
+        }
+
+        function guardarMemoria() {
+            expresionInput.value = expresionActual;
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'accion';
+            input.value = 'ms';
+            formulario.appendChild(input);
+            formulario.submit();
+        }
+
         const resultado = '{{ resultado|default:"0"|escapejs }}';
         if (resultado !== '0') {
             expresionActual = resultado;
             actualizarPantalla();
         }
     </script>
+
+    {% if tokens_info %}
+        <script>
+            try {
+                const tokensInfo = JSON.parse('{{ tokens_info|safe }}');
+                console.log("Tokens recibidos:", tokensInfo);
+                if (tokensInfo && tokensInfo.lista_tokens) {
+                    const tokensList = document.getElementById('lista-tokens');
+                    tokensList.innerHTML = tokensInfo.lista_tokens.map(token => `
+                        <tr>
+                            <td>${token.valor}</td>
+                            <td>${token.tipo}</td>
+                        </tr>
+                    `).join('');
+                    
+                    document.getElementById('total-numeros').textContent = tokensInfo.total_numeros || '0';
+                    document.getElementById('total-operadores').textContent = tokensInfo.total_operadores || '0';
+                }
+            } catch (error) {
+                console.error('Error al procesar tokens_info:', error);
+            }
+        </script>
+    {% endif %}
 </body>
 </html> 
